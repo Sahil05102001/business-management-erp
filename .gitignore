@@ -40,3 +40,9 @@ generated/
 # Temporary
 tmp/
 temp/
+# Prisma agent skills
+backend/.agents/
+backend/.claude/
+backend/.cursor/
+backend/.devin/
+backend/tsconfig.build.tsbuildinfo

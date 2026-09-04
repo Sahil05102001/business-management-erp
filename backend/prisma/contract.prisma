@@ -1,0 +1,262 @@
+model Business {
+  id             Int            @id @default(autoincrement())
+  name           String
+  legalName      String?
+  email          String?
+  phone          String?
+  website        String?
+  gstin          String?
+  pan            String?
+  currency       String         @default("INR")
+  country        String         @default("IN")
+  timezone       String         @default("Asia/Kolkata")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now())
+
+  users          User[]
+  locations      Location[]
+  parties        Party[]
+  units          Unit[]
+  taxes          Tax[]
+  products       Product[]
+  accounts       Account[]
+  journalEntries JournalEntry[]
+
+  @@map("businesses")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  businessId   Int
+  name         String
+  email        String
+  passwordHash String
+  role         UserRole @default(SALES_STAFF)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  business     Business @relation(fields:[businessId], references:[id])
+
+  @@unique([businessId, email])
+  @@index([businessId])
+  @@map("users")
+}
+
+enum UserRole {
+  @@type("pg/text@1")
+
+  OWNER
+  ACCOUNTANT
+  SALES_STAFF
+}
+
+model Location {
+  id         Int      @id @default(autoincrement())
+  businessId Int
+  name       String
+  code       String
+  address    String?
+  city       String?
+  state      String?
+  stateCode  String?
+  country    String   @default("IN")
+  postalCode String?
+  isDefault  Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  business   Business @relation(fields:[businessId], references:[id])
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@map("locations")
+}
+
+model Party {
+  id               Int       @id @default(autoincrement())
+  businessId       Int
+  partyType        PartyType
+  name             String
+  displayName      String?
+  companyName      String?
+  phone            String?
+  mobile           String?
+  email            String?
+  website          String?
+  gstin            String?
+  pan              String?
+  billingAddress   String?
+  shippingAddress  String?
+  city             String?
+  state            String?
+  stateCode        String?
+  country          String    @default("IN")
+  postalCode       String?
+  placeOfSupply    String?
+  paymentTermsDays Int?
+  creditLimit      Decimal?
+  otherTypeName    String?
+  notes            String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now())
+
+  business         Business  @relation(fields:[businessId], references:[id])
+
+  @@index([businessId])
+  @@index([businessId, partyType])
+  @@map("parties")
+}
+
+enum PartyType {
+  @@type("pg/text@1")
+
+  CUSTOMER
+  SUPPLIER
+  BOTH
+  OTHER
+}
+
+model Unit {
+  id         Int       @id @default(autoincrement())
+  businessId Int
+  name       String
+  code       String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+
+  business   Business  @relation(fields:[businessId], references:[id])
+  products   Product[]
+
+  @@unique([businessId, code])
+  @@map("units")
+}
+
+model Tax {
+  id         Int       @id @default(autoincrement())
+  businessId Int
+  name       String
+  rate       Decimal
+  taxType    TaxType
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+
+  business   Business  @relation(fields:[businessId], references:[id])
+  products   Product[]
+
+  @@index([businessId])
+  @@map("taxes")
+}
+
+enum TaxType {
+  @@type("pg/text@1")
+
+  GST
+  IGST
+  CGST
+  SGST
+  CESS
+  OTHER
+}
+
+model Product {
+  id             Int      @id @default(autoincrement())
+  businessId     Int
+  unitId         Int?
+  taxId          Int?
+  name           String
+  sku            String
+  barcode        String?
+  description    String?
+  hsnSac         String?
+  purchasePrice  Decimal?
+  sellingPrice   Decimal?
+  reorderPoint   Decimal?
+  trackInventory Boolean  @default(true)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+
+  business       Business @relation(fields:[businessId], references:[id])
+  unit           Unit?    @relation(fields:[unitId], references:[id])
+  tax            Tax?     @relation(fields:[taxId], references:[id])
+
+  @@unique([businessId, sku])
+  @@index([businessId])
+  @@index([businessId, barcode])
+  @@map("products")
+}
+
+model Account {
+  id           Int           @id @default(autoincrement())
+  businessId   Int
+  code         String
+  name         String
+  accountType  AccountType
+  parentId     Int?
+  isSystem     Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now())
+
+  business     Business      @relation(fields:[businessId], references:[id])
+  parent       Account?      @relation("AccountHierarchy", fields:[parentId], references:[id])
+  children     Account[]     @relation("AccountHierarchy")
+
+  journalLines JournalLine[]
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@index([businessId, accountType])
+  @@map("accounts")
+}
+
+enum AccountType {
+  @@type("pg/text@1")
+
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model JournalEntry {
+  id          Int           @id @default(autoincrement())
+  businessId  Int
+  entryNumber String
+  entryDate   DateTime
+  description String?
+  sourceType  String?
+  sourceId    Int?
+  isPosted    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+
+  business    Business      @relation(fields:[businessId], references:[id])
+  lines       JournalLine[]
+
+  @@unique([businessId, entryNumber])
+  @@index([businessId, entryDate])
+  @@index([businessId, sourceType, sourceId])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id             Int          @id @default(autoincrement())
+  journalEntryId Int
+  accountId      Int
+  description    String?
+  debit          Decimal      @default("0")
+  credit         Decimal      @default("0")
+
+  journalEntry   JournalEntry @relation(fields:[journalEntryId], references:[id])
+  account        Account      @relation(fields:[accountId], references:[id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
