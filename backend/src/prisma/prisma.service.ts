@@ -25,4 +25,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get sql() {
     return this.db.sql;
   }
+
+  transaction<T>(fn: (tx: any) => Promise<T>): Promise<T> {
+    return this.db.transaction(fn);
+  }
 }
