@@ -34,6 +34,37 @@ export class AuthService {
                 phone: registerDto.phone,
             });
 
+            const location = await tx.orm.public.Location.create({
+                businessId: business.id,
+                name: 'Main Location',
+                code: 'MAIN',
+                isDefault: true,
+            });
+
+            const systemAccounts = [
+                { code: '1000', name: 'Cash', accountType: 'ASSET' },
+                { code: '1010', name: 'Bank', accountType: 'ASSET' },
+                { code: '1100', name: 'Accounts Receivable', accountType: 'ASSET' },
+                { code: '1200', name: 'Inventory', accountType: 'ASSET' },
+                { code: '2000', name: 'Accounts Payable', accountType: 'LIABILITY' },
+                { code: '2100', name: 'Output GST', accountType: 'LIABILITY' },
+                { code: '2200', name: 'Input GST', accountType: 'ASSET' },
+                { code: '3000', name: "Owner's Capital", accountType: 'EQUITY' },
+                { code: '4000', name: 'Sales Revenue', accountType: 'REVENUE' },
+                { code: '5000', name: 'Cost of Goods Sold', accountType: 'EXPENSE' },
+                { code: '5100', name: 'General Expense', accountType: 'EXPENSE' },
+            ];
+
+            for (const account of systemAccounts) {
+                await tx.orm.public.Account.create({
+                    businessId: business.id,
+                    code: account.code,
+                    name: account.name,
+                    accountType: account.accountType,
+                    isSystem: true,
+                });
+            }
+
             const user = await tx.orm.public.User.create({
                 businessId: business.id,
                 name: registerDto.ownerName,
